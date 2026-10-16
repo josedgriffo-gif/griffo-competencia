@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="es">
+<!--
+═══════════════════════════════════════════════════════════════
+  GRIFFO - Sistema de Competencia - PANEL PC
+  Versión: v2.73
+  Fecha: 2026-03-14
+  Cambios: Texto "Seleccioná un competidor" discreto — no visible al público
+═══════════════════════════════════════════════════════════════
+-->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRIFFO - Competencia en Vivo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            grid-template-rows: auto 1fr auto;
+            gap: 15px;
+            padding: 15px;
+            height: 100vh;
+        }
+
+        /* HEADER */
+        .header {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #00549F, #00ADD0);
+            padding: 8px 20px;
+            border-radius: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo {
+            width: 120px;
+            height: auto;
+        }
+
+        .title-section {
+            text-align: center;
+            flex: 1;
+        }
+
+        .main-title {
+            font-size: 2rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 3px;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        /* PANEL IZQUIERDO - COLA */
+        .queue-panel {
+            background: rgba(255,255,255,0.08);
+            border-radius: 15px;
+            padding: 15px;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 200px);
+        }
+
+        .panel-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #00ff88;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .queue-list {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .queue-item {
+            background: rgba(255,255,255,0.05);
+            padding: 6px 10px;
+            margin-bottom: 4px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .queue-item:hover {
+            background: rgba(0, 212, 255, 0.15);
+            border-left-color: #00d4ff;
+            transform: translateX(5px);
+        }
+
+        .queue-item.selected {
+            background: rgba(0, 255, 136, 0.2);
+            border-left-color: #00ff88;
+        }
+
+        .queue-item-name {
+            font-weight: bold;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+
+        .queue-item-cel {
+            font-size: 0.75rem;
+            opacity: 0.6;
+            flex-shrink: 0;
+        }
+
+        /* PANEL CENTRAL - CRONÓMETRO */
+        .chrono-panel {
+            background: rgba(255,255,255,0.08);
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .current-competitor {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .competitor-label {
+            font-size: 1.1rem;
+            color: rgba(255,255,255,0.6);
+            font-weight: normal;
+            margin-bottom: 8px;
+        }
+        
+        .competitor-name {
+            font-size: 3.5rem;
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .competitor-name.placeholder {
+            font-size: 1rem;
+            color: rgba(255,255,255,0.3);
+            font-weight: normal;
+        }
+
+        .chrono-display {
+            font-size: 10rem;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            color: #00d4ff;
+            text-shadow: 0 0 30px rgba(0, 212, 255, 0.6);
+            margin-bottom: 40px;
+            line-height: 1;
+        }
+
+        .chrono-display.running {
+            color: #ff3366;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .instructions {
+            font-size: 0.72rem;
+            text-align: center;
+            opacity: 0.45;
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+
+        .btn-retry {
+            background: #ff9800;
+            color: white;
+            display: none !important;
+        }
+
+        .btn-retry:hover {
+            background: #ff6f00;
+            transform: scale(1.05);
+        }
+
+        .btn-retry.visible {
+            display: inline-block;
+        }
+
+        /* PANEL DERECHO - RANKING */
+        .ranking-panel {
+            background: rgba(255,255,255,0.08);
+            border-radius: 15px;
+            padding: 15px;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 200px);
+        }
+
+        .ranking-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .ranking-item {
+            background: rgba(255,255,255,0.05);
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ranking-position {
+            font-size: 1.3rem;
+            font-weight: bold;
+            width: 35px;
+            text-align: center;
+        }
+
+        .ranking-item:nth-child(1) .ranking-position {
+            color: #ffd700;
+        }
+
+        .ranking-item:nth-child(2) .ranking-position {
+            color: #c0c0c0;
+        }
+
+        .ranking-item:nth-child(3) .ranking-position {
+            color: #cd7f32;
+        }
+
+        .ranking-info {
+            flex: 1;
+        }
+
+        .ranking-name {
+            font-weight: bold;
+            font-size: 0.95rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ranking-cel {
+            font-size: 0.75rem;
+            opacity: 0.6;
+        }
+
+        .ranking-time {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+
+        /* FOOTER */
+        .footer-actions {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+        }
+
+        .stats {
+            display: flex;
+            gap: 25px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+
+        .sync-status {
+            font-size: 0.75rem;
+            color: #00ff88;
+        }
+
+        .version-tag {
+            font-size: 0.75rem;
+            opacity: 0.8;
+            color: #00d4ff;
+            font-weight: bold;
+        }
+
+        /* POPUP RESULTADO */
+        .popup-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .popup-overlay.active {
+            display: flex;
+        }
+
+        .popup {
+            background: linear-gradient(135deg, #1e3a8a, #1e40af);
+            padding: 60px 80px;
+            border-radius: 30px;
+            text-align: center;
+            box-shadow: 0 20px 80px rgba(0, 212, 255, 0.6);
+            max-width: 1100px;
+            width: 90%;
+            border: 4px solid #00d4ff;
+        }
+
+        .popup-competitor {
+            font-size: 2.5rem;
+            color: #00ff88;
+            font-weight: bold;
+            margin-bottom: 40px;
+            text-transform: uppercase;
+        }
+
+        .popup-phrase {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 50px;
+            color: #ffffff;
+            line-height: 1.4;
+        }
+
+        .popup-time {
+            font-size: 8rem;
+            font-weight: bold;
+            color: #00d4ff;
+            margin-bottom: 50px;
+            text-shadow: 0 0 40px rgba(0, 212, 255, 0.8);
+            font-family: 'Courier New', monospace;
+        }
+
+        .btn-continue {
+            background: #00ff88;
+            color: #1a1a2e;
+            padding: 20px 70px;
+            font-size: 1.5rem;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+
+        .btn-continue:hover {
+            background: #00d4aa;
+            transform: scale(1.05);
+        }
+
+        /* Scrollbar */
+        .queue-list::-webkit-scrollbar,
+        .ranking-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .queue-list::-webkit-scrollbar-track,
+        .ranking-list::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+            border-radius: 3px;
+        }
+
+        .queue-list::-webkit-scrollbar-thumb,
+        .ranking-list::-webkit-scrollbar-thumb {
+            background: rgba(0, 212, 255, 0.5);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <div class="header">
+            <div class="logo-section">
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAADJCAQAAAC3KXd8AAAAIGNIUk0AAHomAACAhAAA+gAAAIDoAAB1MAAA6mAAADqYAAAXcJy6UTwAAAACYktHRAD/h4/MvwAAAAd0SU1FB+oCBRc4KXpRoHQAAAVUSURBVHja7Z3dlqIwEAbDnn3/V2ZvdHVGIQHSf8VXV3MUnO4uEkKCuKxNkPkTHYCwRYLhSDAcCYYjwXAkGI4Ew5FgOBIMR4LhSDAcCYYjwXAkGI4Ew5FgOBIMR4LhSDAcCYYjwXAkGI4Ew5FgOBIMR4LhSDAcCYYjwXAkGI4Ew5FgOBIMR4LhSDAcCYYjwXAkGI4Ew5FgOBIMR4LhSDAcCYYjwXAkGI4Ew5FgOBIMR4LhSDAcCYYjwXD+RgeQkuM/RbNEh7wZmH5Wp7V2RukeiXTfWbB96glE30+wf8Khmu8jODrRIM13EJwnxQDJZME5U3OWzBScPSlHyTTBddJxkswRXC8RF8UEwXVTcFBcXXDx8O0VVxZcOPQfmEquudhAUetAvRZcLuABDNtwLcGlgj2EmeI6gssEehIjxTXOwXS5huRvwekDnIZJG87dgu8j14y8giV3ClnvqryjXpOcM7bgO8o1I5/gOL3vg5y1u0WRAzHXKDoqmO/j17W7RYHbbTO1YEu9z9KtO+/19/aMeBJZBNuWajnx3jq0d3pyjKL99C477/X39ox6EvEtOLJMxeWNEC3Yu5DrwfeWA/unJLaL9inX+uWvc7GU0xvbgv3KNXJVmyneicS14JLlqkdMC+7LXQa3s+X4BdJyIWaTy7GImay9f7lsbv85TfhtanFkqzmF7F8nHy0tZD14O+1l8/WxUo2NeOfq3Z9Cie6Bmr/grZT3y95XtwzuOTOLsUmSUclG82W+g6xzerMxs6M3x1PwPfWObWlWA78u+sj5aGSif29os7f8911Qfxart3g4clYOIHqqslfqbV2fjM1YPbfoL++Ps/76+2fE/cGW4UHh1UWPds/nS207Yt1rv+vu1sH4CB5NeB16dR3e06O7vC7TNEoPwdf02nC+qLPvyzI+CO0FH523mv0/znIttjSddI47Oo5zvPzriXcy5nEQa8FpjmTn7IKvfl9UbcG+FD5MbQXPKUxvWHN8hmxWy7n2OS5TIpaCLfTWYGSk7ZRXpi7aMmXPtdmRfd0OWzvBZ9rv513Ly9B23nHuRXJ8ltuU2Lno9YvSYstxP9Z804ydX8QvNlwtgP0i5O/lj36r3YvO+cC16qKtpidnDNyulng8hnC9uQZZNBLozSB47bw7o0yzx9Br9xPnxD0Bm3PwsYJuLep7DLaurT/3vzj+AvWjHNdu/l4/XpnxyZEEXhFkG0X3OuyKhF7wxZ+D6QRfz0cKXtpzrsp+WSAqw/D44wS/xHL1JiBLF70MvFbrDJxCb+woetncb+/G8gokkdtatlF0osJQssgleJsq7TeV3NbsvgB+tpO+8mnRpJPbWvQga+zJNtJ7geguev/LZTXUppXbmuUzOs59cIrHHhyMODXRLfg3tfQml9ua7VN2ask6SgG5reVrwTUoIrc16+dkEdtwIbmt2T8IjaW4mNzWPJ50R1FcUG5rPo8yrK64qNpH8C7Vr6u4tNzW/B5GWk9xebWPNBwrX0UyRO0jGdeqZ1eMUvtIyb3mOSUD1T4SC6l3JslYtY/0wmodLRku9n+awXX2//c3Efs/3eiG9MA6jJtpfUs8ieAnM8O5rdR3sgl+J8WvllQns2AxgSxfXRFGSDAcCYYjwXAkGI4Ew5FgOBIMR4LhSDAcCYYjwXAkGI4Ew5FgOBIMR4LhSDAcCYYjwXAkGI4Ew5FgOBIMR4LhSDAcCYYjwXAkGI4Ew5FgOBIMR4LhSDAcCYYjwXAkGI4Ew5FgOBIMR4LhSDAcCYYjwXAkGI4Ew5FgOBIMR4LhSDAcCYYjwXAkGI4Ew5FgOBIMR4Lh/APXkuVymJVW4AAAAABJRU5ErkJggg==" alt="Griffo" class="logo">
+            </div>
+            <div class="title-section">
+                <div class="main-title">Vos, colocás fuelle en segundos?</div>
+                <div class="subtitle">Competencia en vivo - GRIFFO</div>
+            </div>
+            <div style="width: 120px;"></div>
+        </div>
+
+        <!-- COLA -->
+        <div class="queue-panel">
+            <div class="panel-title">🎯 PRÓXIMOS COMPETIDORES</div>
+            <div class="queue-list" id="queueList">
+                <div style="text-align: center; opacity: 0.5; padding: 20px;">
+                    Cargando registros...
+                </div>
+            </div>
+        </div>
+
+        <!-- CRONÓMETRO -->
+        <div class="chrono-panel">
+            <div class="current-competitor" id="currentCompetitor">
+                <div class="competitor-label">Competidor</div>
+                <div class="competitor-name placeholder" id="competitorName">Seleccioná un competidor de la cola</div>
+            </div>
+            <div class="chrono-display" id="chronoDisplay">00.00</div>
+            <div class="instructions" id="instructions">
+                D / I iniciar · R percance · V ver último · ESC cancelar
+            </div>
+            <button class="btn btn-retry" id="btnRetry">🔄 Reintentar (percance)</button>
+        </div>
+
+        <!-- RANKING -->
+        <div class="ranking-panel">
+            <div class="panel-title">🏆 TOP 10</div>
+            <div class="ranking-list" id="rankingList">
+                <div style="text-align: center; opacity: 0.5; padding: 20px;">
+                    Aún no hay tiempos registrados
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="footer-actions">
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="totalCompetitors">0</div>
+                    <div class="stat-label">Competidores</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="bestTime">--:--</div>
+                    <div class="stat-label">Mejor Tiempo</div>
+                </div>
+            </div>
+            <div class="sync-status" id="syncStatus">🔄 Sincronizando...</div>
+            <div class="version-tag">v2.73</div>
+        </div>
+    </div>
+
+    <!-- POPUP -->
+    <div class="popup-overlay" id="popupResult">
+        <div class="popup">
+            <div class="popup-competitor" id="popupCompetitor"></div>
+            <div class="popup-phrase" id="popupPhrase"></div>
+            <div class="popup-time" id="popupTime"></div>
+            <button class="btn-continue" onclick="closePopup()">✅ Continuar</button>
+        </div>
+    </div>
+
+    <script>
+        // URL de Google Apps Script
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyQIcbPWDwUg3Bz_JTYVmqiVjPGzcjVM0MPaRTbsJqm7u1zILXzcfeIyiu-f3JT_y2p/exec';
+
+        // FRASES LIMPIAS (sin nombre ni tiempo - solo el mensaje)
+        const FRASES_LIMPIAS = [
+            "¡Ni el café se enfrió!",
+            "¡El más rápido del oeste!",
+            "¡Los fuelles le tienen miedo!",
+            "Si tu mecánico tarda más, mostrále este video",
+            "¡Acá hay talento escondido!",
+            "¿Y vos? ¡Animate a competir!",
+            "¡En tu taller, cuánto tardás?",
+            "Quedate, terminá el café tranquilo...",
+            "¡Otro crack que pasó por el stand!",
+            "¡Gracias por jugar!",
+            "¡El fuelle nuevo ya está puesto, jefe!",
+            "¿Quién se anima a ganarle?",
+            "¡Aplausos para el competidor!",
+            "Y sin despeinarse",
+            "¡Dale, convencé a un amigo que pruebe!",
+            "Cambio de fuelle completado con éxito ✅",
+            "¡Eso sí que es ponerle garra!",
+            "¡Grande!",
+            "Si le ponés así en el taller, ¡el dueño te aumenta!",
+            "Más rápido que pedir un cafecito",
+            "¡Hasta el fuelle quedó sorprendido!",
+            "¡Acá no se viene a pasear, se viene a competir!",
+            "¡Eso es tener cancha!",
+            "¡El público pide más!",
+            "¡Le puso pila y se notó!",
+            "¡Fuelle puesto, misión cumplida!",
+            "¡Así se labura!",
+            "¡Se ve que no es la primera vez que agarra una herramienta!",
+            "¡Listo para la ruta, patrón!",
+            "¡Esa velocidad no se enseña, se trae de fábrica!",
+            "¡Dejaste la vara alta para el que sigue!",
+            "¡Esas manos valen oro!",
+            "¡Ese fuelle no sabía lo que le esperaba!",
+            "¡Con ese ritmo, te contratamos!",
+            "¡Eso se festeja con un mate!",
+            "¡Arrancaste manso y terminaste como un campeón!",
+            "¡Eso se festeja con una birra bien fría!",
+            "¡Ahora sí, merecés un vinito para brindar!",
+            "¡Le metió turbo al cambio de fuelle!",
+            "¡Mirá si será crack que hasta el reloj se sorprendió!",
+            "¡Nació para esto!",
+            "¡Más rápido que Alpine!",
+            "¡Vino, vio y cambió el fuelle!",
+            "¡Trabajito hecho, hora del asado!",
+            "¡El stand se queda chico para tanto talento!",
+            "¡Puso primera y no paró hasta el final!",
+            "¡Lo hizo parecer fácil!",
+            "¡Cambió el fuelle y todavía le sobró tiempo para el fernet!",
+            "¡Le puso el alma al cambio!",
+            "¡Dejá el CV que te llamamos!",
+            "¡Máquina total!",
+            "¡Si el fuelle hablara, diría gracias!",
+            "¡Hasta los de al lado dejaron de vender para mirarte!",
+            "¡Hoy se duerme con la conciencia tranquila!",
+            "¡Lo aplaudimos o lo silbamos?"
+        ];
+
+        // Estado
+        let allData = [];
+        let queue = [];
+        let ranking = [];
+        let selectedCompetitor = null;
+        let selectedIndex = -1;
+        let chronoStartTime = null;
+        let chronoInterval = null;
+        let isRunning = false;
+        let lastResult = null; // guarda el último resultado para tecla V
+
+        // Cargar datos desde Google Sheets
+        async function loadDataFromSheets() {
+            try {
+                console.log('🔄 Cargando datos...');
+                const response = await fetch(SCRIPT_URL);
+                console.log('✅ Response:', response.status);
+                const rawData = await response.json();
+                console.log('📊 Datos recibidos:', rawData.length, 'registros');
+                
+                // Normalizar datos — mapear por posición si los headers no coinciden
+                // Columnas del Sheet: timestamp(0), nombre_negocio(1), nombre_competidor(2), celular(3), ultimos_4(4), tiempo(5), estado(6), operador(7), dispositivo_id(8), comentario(9)
+                const data = rawData.map(function(r) {
+                    // Si ya tiene el campo estado como key, usar directo
+                    if (r.estado !== undefined) return r;
+                    // Si no, mapear por posición de valores
+                    var vals = Object.values(r);
+                    return {
+                        timestamp: vals[0] || '',
+                        nombre_negocio: vals[1] || '',
+                        nombre_competidor: vals[2] || '',
+                        celular: vals[3] || '',
+                        ultimos_4: vals[4] || '',
+                        tiempo: vals[5] || '',
+                        estado: vals[6] || '',
+                        operador: vals[7] || '',
+                        dispositivo_id: vals[8] || '',
+                        comentario: vals[9] || ''
+                    };
+                });
+                
+                allData = data;
+                queue = data.filter(r => r.estado === 'registrado');
+                ranking = data.filter(r => r.estado === 'completado' && r.tiempo)
+                    .map(r => ({...r, tiempo: parseFloat(String(r.tiempo).replace(',','.'))}))
+                    .filter(r => !isNaN(r.tiempo) && r.tiempo > 0 && r.tiempo < 999)
+                    .sort((a, b) => a.tiempo - b.tiempo);
+                
+                console.log('👥 Cola:', queue.length, 'Ranking:', ranking.length);
+                
+                renderQueue();
+                renderRanking();
+                updateStats();
+                
+                document.getElementById('syncStatus').textContent = '✅ Sincronizado';
+                setTimeout(() => {
+                    document.getElementById('syncStatus').textContent = '🔄 Sincronizando...';
+                }, 1000);
+            } catch (error) {
+                console.error('❌ Error:', error);
+                document.getElementById('syncStatus').textContent = '⚠️ Error de conexión';
+            }
+        }
+
+        // Guardar resultado en Google Sheets
+        async function saveResultToSheets(nombre, celular, tiempo) {
+            try {
+                // Crear iframe oculto para envío (compatible con todos los navegadores)
+                let iframe = document.getElementById('hiddenFrame');
+                if (!iframe) {
+                    iframe = document.createElement('iframe');
+                    iframe.id = 'hiddenFrame';
+                    iframe.name = 'hiddenFrame';
+                    iframe.style.display = 'none';
+                    document.body.appendChild(iframe);
+                }
+
+                // Crear formulario temporal
+                const tempForm = document.createElement('form');
+                tempForm.action = SCRIPT_URL;
+                tempForm.method = 'POST';
+                tempForm.target = 'hiddenFrame';
+                tempForm.style.display = 'none';
+
+                // Agregar campos
+                const fields = {
+                    nombre: nombre,
+                    celular: celular,
+                    tiempo: tiempo,
+                    estado: 'completado'
+                };
+
+                for (const [key, value] of Object.entries(fields)) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = key;
+                    input.value = value;
+                    tempForm.appendChild(input);
+                }
+
+                document.body.appendChild(tempForm);
+                tempForm.submit();
+
+                // Limpiar formulario temporal
+                setTimeout(() => {
+                    if (document.body.contains(tempForm)) {
+                        document.body.removeChild(tempForm);
+                    }
+                }, 1000);
+                
+                console.log('✅ Resultado guardado:', nombre, tiempo);
+                
+                // Agregar al ranking LOCAL inmediatamente
+                ranking.push({
+                    nombre_competidor: nombre,
+                    celular: celular,
+                    tiempo: parseFloat(tiempo),
+                    estado: 'completado'
+                });
+                ranking.sort((a, b) => a.tiempo - b.tiempo);
+                
+                // Actualizar UI inmediatamente
+                renderRanking();
+                updateStats();
+                
+                // Forzar recarga completa en 2 segundos (para sincronizar con Sheet)
+                setTimeout(() => loadDataFromSheets(), 2000);
+            } catch (error) {
+                console.error('❌ Error guardando:', error);
+            }
+        }
+
+        // Renderizar cola
+        function renderQueue() {
+            const queueList = document.getElementById('queueList');
+            if (queue.length === 0) {
+                queueList.innerHTML = '<div style="text-align: center; opacity: 0.5; padding: 20px;">No hay competidores en cola</div>';
+                return;
+            }
+            
+            queueList.innerHTML = queue.map((comp, idx) => `
+                <div class="queue-item ${selectedIndex === idx ? 'selected' : ''}" 
+                     onclick="selectCompetitor(${idx})">
+                    <div class="queue-item-name">${comp.nombre_competidor}</div>
+                    <div class="queue-item-cel">📱 ···${comp.ultimos_4}</div>
+                </div>
+            `).join('');
+        }
+
+        // Seleccionar competidor
+        function selectCompetitor(idx) {
+            if (isRunning) return;
+            selectedIndex = idx;
+            selectedCompetitor = queue[idx];
+            document.getElementById('competitorName').textContent = selectedCompetitor.nombre_competidor;
+            document.getElementById('competitorName').classList.remove('placeholder');
+            document.getElementById('instructions').innerHTML = 'D / I iniciar · R percance · V ver último · ESC cancelar';
+            renderQueue();
+        }
+
+        // Control con teclas D e I (derecha / izquierda — ambas funcionan igual)
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+
+            // R — percance (resetea sin registrar)
+            if (key === 'r') {
+                if (isRunning) {
+                    document.getElementById('btnRetry').click();
+                }
+                return;
+            }
+
+            // V — ver último resultado
+            if (key === 'v') {
+                if (lastResult) showResultPopup(lastResult.nombre, lastResult.tiempo, lastResult.frase);
+                return;
+            }
+
+            // ESC — cerrar popup o cancelar countdown
+            if (e.key === 'Escape') {
+                if (document.getElementById('popupResult').classList.contains('active')) {
+                    closePopup();
+                }
+                return;
+            }
+
+            if (key === 'd' || key === 'i') {
+                e.preventDefault();
+                if (document.getElementById('popupResult').classList.contains('active')) {
+                    closePopup();
+                    return;
+                }
+                if (!selectedCompetitor) {
+                    alert('⚠️ Primero seleccioná un competidor de la cola');
+                    return;
+                }
+                if (!isRunning) {
+                    startChrono();
+                } else {
+                    stopChrono();
+                }
+            }
+        });
+
+        // Audio Web API
+        let audioCtx = null;
+        function getAudioCtx() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            return audioCtx;
+        }
+
+        function playBeep() {
+            const ctx = getAudioCtx();
+            const o = ctx.createOscillator();
+            const g = ctx.createGain();
+            o.connect(g); g.connect(ctx.destination);
+            o.type = 'square';
+            o.frequency.setValueAtTime(880, ctx.currentTime);
+            g.gain.setValueAtTime(0.3, ctx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+            o.start(ctx.currentTime);
+            o.stop(ctx.currentTime + 0.15);
+        }
+
+        function playHorn() {
+            const ctx = getAudioCtx();
+            const t = ctx.currentTime;
+            [220, 293, 370].forEach((freq) => {
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.connect(g); g.connect(ctx.destination);
+                o.type = 'sawtooth';
+                o.frequency.setValueAtTime(freq, t);
+                o.frequency.linearRampToValueAtTime(freq * 1.02, t + 0.5);
+                g.gain.setValueAtTime(0, t);
+                g.gain.linearRampToValueAtTime(1.0, t + 0.03);
+                g.gain.setValueAtTime(1.0, t + 0.42);
+                g.gain.linearRampToValueAtTime(0, t + 0.5);
+                o.start(t); o.stop(t + 0.55);
+            });
+        }
+
+        // Iniciar cronómetro con countdown
+        let countdownTimeout = null;
+        function startChrono() {
+            const display = document.getElementById('chronoDisplay');
+            const instructions = document.getElementById('instructions');
+            
+            // Bloquear nueva pulsación durante countdown
+            isRunning = true;
+
+            const steps = ['PREPARADO', 'LISTO', 'YA!'];
+            let step = 0;
+
+            function doStep() {
+                display.textContent = steps[step];
+                display.style.fontSize = '6rem';
+                if (step < 2) {
+                    playBeep();
+                } else {
+                    playHorn();
+                }
+                if (step < 2) {
+                    step++;
+                    countdownTimeout = setTimeout(doStep, 1000);
+                } else {
+                    // Arranca el cronómetro
+                    countdownTimeout = setTimeout(() => {
+                        display.style.fontSize = '10rem';
+                        display.classList.add('running');
+                        document.getElementById('btnRetry').classList.add('visible');
+                        instructions.innerHTML = 'D / I detener · R percance · ESC cancelar';
+                        chronoStartTime = Date.now();
+                        chronoInterval = setInterval(() => {
+                            const elapsed = (Date.now() - chronoStartTime) / 1000;
+                            display.textContent = elapsed.toFixed(2);
+                        }, 10);
+                    }, 1000);
+                }
+            }
+            doStep();
+        }
+
+        // Detener cronómetro
+        async function stopChrono() {
+            clearInterval(chronoInterval);
+            clearTimeout(countdownTimeout);
+            isRunning = false;
+            const finalTime = chronoStartTime ? ((Date.now() - chronoStartTime) / 1000).toFixed(2) : '0.00';
+            const display = document.getElementById('chronoDisplay');
+            display.classList.remove('running');
+            display.style.fontSize = '10rem';
+            document.getElementById('btnRetry').classList.remove('visible');
+            
+            // Mostrar popup INMEDIATAMENTE (antes de guardar)
+            showResultPopup(selectedCompetitor.nombre_competidor, finalTime);
+            
+            // Guardar en Google Sheets en BACKGROUND (sin esperar)
+            saveResultToSheets(selectedCompetitor.nombre_competidor, selectedCompetitor.celular, finalTime);
+            
+            // Eliminar de la cola LOCAL inmediatamente
+            queue = queue.filter((_, idx) => idx !== selectedIndex);
+            
+            // Reset
+            selectedCompetitor = null;
+            selectedIndex = -1;
+            document.getElementById('chronoDisplay').textContent = '00.00';
+            document.getElementById('competitorName').textContent = 'Seleccioná un competidor de la cola';
+            document.getElementById('competitorName').classList.add('placeholder');
+            document.getElementById('instructions').innerHTML = 'D / I iniciar · R percance · V ver último · ESC cancelar';
+            
+            // Renderizar cola actualizada
+            renderQueue();
+        }
+
+        // Reintentar
+        document.getElementById('btnRetry').addEventListener('click', () => {
+            clearInterval(chronoInterval);
+            isRunning = false;
+            document.getElementById('chronoDisplay').textContent = '00.00';
+            document.getElementById('chronoDisplay').classList.remove('running');
+            document.getElementById('btnRetry').classList.remove('visible');
+            document.getElementById('instructions').innerHTML = 'D / I iniciar · R percance · V ver último · ESC cancelar';
+        });
+
+        // Popup con frase
+        function showResultPopup(nombre, tiempo, fraseFija) {
+            const frase = fraseFija || FRASES_LIMPIAS[Math.floor(Math.random() * FRASES_LIMPIAS.length)];
+            if (!fraseFija) lastResult = { nombre, tiempo, frase };
+            document.getElementById('popupCompetitor').textContent = '🏆 ' + nombre.toUpperCase() + ' 🏆';
+            document.getElementById('popupPhrase').textContent = frase;
+            document.getElementById('popupTime').textContent = tiempo + '\"';
+            document.getElementById('popupResult').classList.add('active');
+        }
+
+        function closePopup() {
+            document.getElementById('popupResult').classList.remove('active');
+        }
+
+        // Renderizar ranking
+        function renderRanking() {
+            const rankingList = document.getElementById('rankingList');
+            const top10 = ranking.slice(0, 10);
+            
+            if (top10.length === 0) {
+                rankingList.innerHTML = '<div style="text-align: center; opacity: 0.5; padding: 20px;">Aún no hay tiempos</div>';
+                return;
+            }
+            
+            rankingList.innerHTML = top10.map((comp, idx) => `
+                <div class="ranking-item">
+                    <div class="ranking-position">${idx + 1}°</div>
+                    <div class="ranking-info">
+                        <div class="ranking-name">${comp.nombre_competidor}</div>
+                        <div class="ranking-cel">📱 ···${comp.ultimos_4}</div>
+                    </div>
+                    <div class="ranking-time">${comp.tiempo.toFixed(2)}"</div>
+                </div>
+            `).join('');
+        }
+
+        // Actualizar stats
+        function updateStats() {
+            document.getElementById('totalCompetitors').textContent = ranking.length;
+            if (ranking.length > 0) {
+                document.getElementById('bestTime').textContent = ranking[0].tiempo.toFixed(2) + '"';
+            }
+        }
+
+        // Sincronizar cada 2 segundos
+        loadDataFromSheets();
+        setInterval(loadDataFromSheets, 2000);
+    </script>
+</body>
+</html>
