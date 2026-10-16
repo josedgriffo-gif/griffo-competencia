@@ -3,10 +3,11 @@
 <!--
 ═══════════════════════════════════════════════════════════════
   GRIFFO - Sistema de Competencia - REGISTRO MÓVIL
-  Versión: v2.39
-  Fecha: 2026-03-12
-  Cambios: Campo DNI reemplazado por Celular (últimos 4 dígitos para display)
-           + Teclas D/I reemplazan barra espaciadora en COMPETENCIA
+  Versión: v2.73
+  Fecha: 2026-03-14
+  Cambios: Campos correctos: nombre_competidor + celular + nombre_negocio + comentario
+           Diseño compacto para móvil
+           Anti-duplicado por celular del día (via Script)
 ═══════════════════════════════════════════════════════════════
 -->
 <head>
@@ -14,101 +15,77 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Registro - Competencia GRIFFO</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Arial', sans-serif;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             color: white;
             min-height: 100vh;
-            padding: 10px;
+            padding: 12px;
         }
 
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-        }
+        .container { max-width: 480px; margin: 0 auto; }
 
         .header {
             text-align: center;
-            margin-bottom: 15px;
-            padding: 10px 15px;
-            background: rgba(255,255,255,0.08);
+            padding: 12px 15px 8px;
+            background: linear-gradient(135deg, #00549F, #00ADD0);
             border-radius: 12px;
             border: 2px solid rgba(0, 212, 255, 0.3);
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            justify-content: center;
+            margin-bottom: 10px;
         }
 
-        .logo {
-            width: 80px;
-            height: auto;
-        }
-
-        .header-text h1 {
-            font-size: 1rem;
-            color: #00d4ff;
-            text-transform: uppercase;
-            font-weight: bold;
-            text-align: left;
-        }
-
-        .header-text p {
-            font-size: 0.8rem;
-            opacity: 0.7;
-            text-align: left;
-        }
+        .logo { width: 140px; margin-bottom: 6px; }
+        .header h1 { font-size: 1.1rem; color: #00d4ff; margin-bottom: 2px; text-transform: uppercase; }
+        .header p { font-size: 0.8rem; opacity: 0.8; }
+        .version { font-size: 0.65rem; opacity: 0.35; margin-top: 4px; }
 
         .form-container {
             background: rgba(255,255,255,0.08);
-            padding: 25px;
-            border-radius: 15px;
+            padding: 15px;
+            border-radius: 12px;
             border: 2px solid rgba(0, 212, 255, 0.3);
         }
 
-        .form-group {
-            margin-bottom: 12px;
-        }
+        .form-group { margin-bottom: 12px; }
 
         .form-group label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
             color: #00ff88;
             font-weight: bold;
-            font-size: 0.9rem;
+            font-size: 0.82rem;
         }
 
-        .form-group input {
+        .form-group input, .form-group textarea {
             width: 100%;
-            padding: 15px;
+            padding: 11px 13px;
             font-size: 16px;
             border: 2px solid rgba(0, 212, 255, 0.3);
-            border-radius: 10px;
+            border-radius: 8px;
             background: rgba(255,255,255,0.05);
             color: white;
             transition: all 0.3s;
+            font-family: Arial, sans-serif;
         }
 
-        .form-group input:focus {
+        .form-group textarea { resize: none; height: 60px; font-size: 14px; }
+
+        .form-group input:focus, .form-group textarea:focus {
             outline: none;
             border-color: #00d4ff;
             background: rgba(0, 212, 255, 0.1);
         }
 
-        .form-group input::placeholder {
-            color: rgba(255,255,255,0.4);
+        .form-group input::placeholder, .form-group textarea::placeholder {
+            color: rgba(255,255,255,0.35);
         }
 
         .btn-submit {
             width: 100%;
-            padding: 18px;
-            font-size: 1.1rem;
+            padding: 15px;
+            font-size: 1.05rem;
             font-weight: bold;
             color: #1a1a2e;
             background: linear-gradient(135deg, #00ff88, #00d4aa);
@@ -117,17 +94,11 @@
             cursor: pointer;
             text-transform: uppercase;
             transition: all 0.3s;
-            margin-top: 10px;
+            margin-top: 4px;
         }
 
-        .btn-submit:active {
-            transform: scale(0.98);
-        }
-
-        .btn-submit:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+        .btn-submit:active { transform: scale(0.98); }
+        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .success-message {
             display: none;
@@ -136,93 +107,61 @@
             background: rgba(0, 255, 136, 0.2);
             border: 2px solid #00ff88;
             border-radius: 10px;
-            margin-top: 20px;
+            margin-top: 12px;
         }
 
-        .success-message.active {
-            display: block;
-            animation: slideIn 0.5s;
-        }
-
-        .success-message h2 {
-            color: #00ff88;
-            font-size: 1.5rem;
-            margin-bottom: 10px;
-        }
-
-        .success-message p {
-            font-size: 0.95rem;
-            opacity: 0.9;
-        }
+        .success-message.active { display: block; animation: slideIn 0.4s; }
+        .success-message h2 { color: #00ff88; font-size: 1.4rem; margin-bottom: 8px; }
+        .success-message p { font-size: 0.9rem; opacity: 0.9; }
 
         .error-message {
             display: none;
             text-align: center;
-            padding: 20px;
+            padding: 12px;
             background: rgba(255, 51, 102, 0.2);
             border: 2px solid #ff3366;
             border-radius: 10px;
-            margin-top: 20px;
+            margin-top: 10px;
+            font-size: 0.9rem;
         }
 
-        .error-message.active {
-            display: block;
-            animation: slideIn 0.5s;
-        }
-
-        .info-box {
-            background: rgba(0, 212, 255, 0.1);
-            border-left: 4px solid #00d4ff;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 0.85rem;
-        }
+        .error-message.active { display: block; animation: slideIn 0.4s; }
 
         @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <img src="data:image/png;base64,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" alt="Griffo" class="logo">
-            <div class="header-text">
-                <h1>Vos, colocás fuelle en segundos?</h1>
-                <p>Registrate para participar</p>
-            </div>
+            <img src="data:image/png;base64,/9j/4AAQSkZJRgABAgAAAQABAAD/wAARCADgAPwDACIAAREBAhEB/9sAQwAIBgYHBgUIBwcHCQkICgwUDQwLCwwZEhMPFB0aHx4dGhwcICQuJyAiLCMcHCg3KSwwMTQ0NB8nOT04MjwuMzQy/9sAQwEJCQkMCwwYDQ0YMiEcITIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIy/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMAAAERAhEAPwD5/ooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigD7+ooooA+AaKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooA+/qKKKAPgGiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAPv6iiigD4BooooAKKKKACiiigAooooAKKKKACiiigAorb0bw5rHiO4MOkaXdXrh1RjBEWWMscLvbooODyxA4Jzwa9K0D9nvxBfosms39rpSMh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J4Q/6FTQ/wDwXQ//ABNAHxDRX29/wgnhD/oVND/8F0P/AMTR/wAIJ4Q/6FTQ/wDwXQ//ABNAHxDRX29/wgnhD/oVND/8F0P/AMTR/wAIJ4Q/6FTQ/wDwXQ//ABNAHxDRX29/wgnhD/oVND/8F0P/AMTR/wAIJ4Q/6FTQ/wDwXQ//ABNAHxDRX29/wgnhD/oVND/8F0P/AMTR/wAIJ4Q/6FTQ/wDwXQ//ABNAHxDRX29/wgnhD/oVND/8F0P/AMTR/wAIJ4Q/6FTQ/wDwXQ//ABNAHxDRX29/wgnhD/oVND/8F0P/AMTR/wAIJ4Q/6FTQ/wDwXQ//ABNAHxDRX29/wgnhD/oVND/8F0P/AMTR/wAIJ4Q/6FTQ/wDwXQ//ABNAHxDRX29/wgnhD/oVND/8F0P/AMTR/wAIJ4Q/6FTQ/wDwXQ//ABNAHxDRX29/wgnhD/oVND/8F0P/AMTR/wAIJ4Q/6FTQ/wDwXQ//ABNAHxDRX29/wgnhD/oVND/8F0P/AMTR/wAIJ4Q/6FTQ/wDwXQ//ABNAHxDRX29/wgnhD/oVND/8F0P/AMTR/wAIJ4Q/6FTQ/wDwXQ//ABNAHxDRX29/wgnhD/oVND/8F0P/AMTR/wAIJ4Q/6FTQ/wDwXQ//ABNAHxDRX29/wgnhD/oVND/8F0P/AMTR/wAIJ4Q/6FTQ/wDwXQ//ABNAHxDRX29/wgnhD/oVND/8F0P/AMTR/wAIJ4Q/6FTQ/wDwXQ//ABNAHQUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFAH//Z" alt="Griffo" class="logo">
+            <h1>Vos, colocás fuelle en segundos?</h1>
+            <p>Registrate para participar</p>
+            <div class="version">v2.73</div>
         </div>
-
-        <div style="text-align:right; font-size:0.7rem; opacity:0.4; margin-bottom:8px;">v2.39</div>
 
         <div class="form-container">
             <form id="registrationForm">
                 <div class="form-group">
-                    <label for="nombre_competidor">Nombre del competidor *</label>
-                    <input type="text" id="nombre_competidor" name="nombre_competidor" placeholder="Juan Pérez" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="nombre_negocio">Nombre del negocio <span style="opacity:0.6;font-weight:normal">(opcional)</span></label>
-                    <input type="text" id="nombre_negocio" name="nombre_negocio" placeholder="Taller El Rápido">
+                    <label for="nombre_competidor">Nombre *</label>
+                    <input type="text" id="nombre_competidor" name="nombre_competidor" placeholder="Juan Pérez" autocomplete="off" required>
                 </div>
 
                 <div class="form-group">
                     <label for="celular">Celular *</label>
-                    <input type="tel" id="celular" name="celular" placeholder="1145678901" inputmode="numeric" required>
+                    <input type="tel" id="celular" name="celular" placeholder="1112345678" pattern="[0-9]{8,12}" inputmode="numeric" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="comentario">Comentario <span style="opacity:0.6;font-weight:normal">(opcional)</span></label>
-                    <input type="text" id="comentario" name="comentario" placeholder="Algo relevante...">
+                    <label for="nombre_negocio">Negocio / Taller</label>
+                    <input type="text" id="nombre_negocio" name="nombre_negocio" placeholder="Opcional" autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                    <label for="comentario">Comentario</label>
+                    <textarea id="comentario" name="comentario" placeholder="Opcional"></textarea>
                 </div>
 
                 <button type="submit" class="btn-submit" id="btnSubmit">🏁 Registrarme</button>
@@ -231,150 +170,111 @@
             <div class="success-message" id="successMessage">
                 <h2>✅ ¡Registrado!</h2>
                 <p>Ya estás en la cola para competir</p>
-                <p style="margin-top: 10px; opacity: 0.7;">Acercate al stand cuando te llamen</p>
+                <p style="margin-top:6px; opacity:0.7;">Acercate al stand cuando te llamen</p>
             </div>
 
             <div class="error-message" id="errorMessage">
-                <h2>⚠️ Error</h2>
-                <p id="errorText">Hubo un problema. Intentá de nuevo.</p>
+                <span id="errorText">⚠️ Hubo un problema. Intentá de nuevo.</span>
             </div>
         </div>
     </div>
 
+    <iframe id="hiddenFrame" name="hiddenFrame" style="display:none;"></iframe>
+
     <script>
-        // URL de tu Google Apps Script
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzsUiYNRA5OVMwlvCwlPu5pqQJRAsUqXh-D-trBVFSsoCnh0A2KLnM8Hh4tTkPixO4C/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyQIcbPWDwUg3Bz_JTYVmqiVjPGzcjVM0MPaRTbsJqm7u1zILXzcfeIyiu-f3JT_y2p/exec';
 
-        const form = document.getElementById('registrationForm');
-        const successMessage = document.getElementById('successMessage');
-        const errorMessage = document.getElementById('errorMessage');
-        const errorText = document.getElementById('errorText');
-        const btnSubmit = document.getElementById('btnSubmit');
-
-        // Generar ID único del dispositivo
         let dispositivoId = localStorage.getItem('griffo_dispositivo_id');
         let operadorNombre = localStorage.getItem('griffo_operador_nombre');
-        
+
         if (!dispositivoId) {
-            // Primera vez - generar ID único
             dispositivoId = 'CEL_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6).toUpperCase();
             localStorage.setItem('griffo_dispositivo_id', dispositivoId);
         }
 
-        // Si no tiene nombre, pedirlo UNA SOLA VEZ
-        if (!operadorNombre) {
-            operadorNombre = prompt('👤 Primera vez en este celular\n\n¿Cuál es TU nombre?\n(Solo se pregunta una vez)');
-            if (operadorNombre && operadorNombre.trim()) {
-                operadorNombre = operadorNombre.trim();
-                localStorage.setItem('griffo_operador_nombre', operadorNombre);
-            } else {
-                operadorNombre = 'Anónimo';
-                localStorage.setItem('griffo_operador_nombre', operadorNombre);
-            }
+        if (!operadorNombre || operadorNombre === 'Anónimo' || operadorNombre === 'Anonimo') {
+            operadorNombre = prompt('👤 ¿Cuál es TU nombre?\n(Solo se pregunta una vez por celular)');
+            operadorNombre = (operadorNombre && operadorNombre.trim()) ? operadorNombre.trim() : 'Anónimo';
+            localStorage.setItem('griffo_operador_nombre', operadorNombre);
         }
 
-        // Enviar formulario
-        form.addEventListener('submit', async (e) => {
+        document.getElementById('registrationForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const nombre_competidor = document.getElementById('nombre_competidor').value.trim();
-            const nombre_negocio = document.getElementById('nombre_negocio').value.trim();
             const celular = document.getElementById('celular').value.trim();
+            const nombre_negocio = document.getElementById('nombre_negocio').value.trim();
             const comentario = document.getElementById('comentario').value.trim();
 
-            // Validar celular (mínimo 6 dígitos, solo números)
-            if (!/^\d{6,15}$/.test(celular)) {
-                errorText.textContent = 'Ingresá un número de celular válido (solo números)';
-                errorMessage.classList.add('active');
-                setTimeout(() => errorMessage.classList.remove('active'), 3000);
+            if (!/^\d{8,12}$/.test(celular)) {
+                document.getElementById('errorText').textContent = '⚠️ El celular debe tener entre 8 y 12 dígitos (solo números)';
+                document.getElementById('errorMessage').classList.add('active');
+                setTimeout(() => document.getElementById('errorMessage').classList.remove('active'), 3000);
                 return;
             }
 
-            // Verificar si celular ya está registrado
+            const btnSubmit = document.getElementById('btnSubmit');
+            btnSubmit.disabled = true;
+            btnSubmit.textContent = '⏳ Verificando...';
+
+            // Verificar si el celular ya está registrado hoy
             try {
-                const checkResp = await fetch(SCRIPT_URL);
-                const checkData = await checkResp.json();
-                const yaExiste = checkData.some(r => String(r.celular) === String(celular));
-                if (yaExiste) {
-                    errorText.textContent = '⚠️ Este celular ya está registrado.';
-                    errorMessage.classList.add('active');
-                    setTimeout(() => errorMessage.classList.remove('active'), 4000);
+                const res = await fetch(`${SCRIPT_URL}?action=verificar&celular=${encodeURIComponent(celular)}`);
+                const data = await res.json();
+                if (data.duplicado) {
+                    document.getElementById('errorText').textContent = '🚫 Este celular ya está registrado hoy';
+                    document.getElementById('errorMessage').classList.add('active');
+                    setTimeout(() => document.getElementById('errorMessage').classList.remove('active'), 4000);
                     btnSubmit.disabled = false;
                     btnSubmit.textContent = '🏁 Registrarme';
                     return;
                 }
-            } catch(err) {}
+            } catch(err) {
+                // Si falla la verificación, continúa igual (el Script igual controla duplicados)
+                console.warn('No se pudo verificar duplicado:', err);
+            }
 
-            // Deshabilitar botón
-            btnSubmit.disabled = true;
             btnSubmit.textContent = '⏳ Enviando...';
 
-            try {
-                let iframe = document.getElementById('hiddenFrame');
-                if (!iframe) {
-                    iframe = document.createElement('iframe');
-                    iframe.id = 'hiddenFrame';
-                    iframe.name = 'hiddenFrame';
-                    iframe.style.display = 'none';
-                    document.body.appendChild(iframe);
-                }
+            const tempForm = document.createElement('form');
+            tempForm.action = SCRIPT_URL;
+            tempForm.method = 'POST';
+            tempForm.target = 'hiddenFrame';
+            tempForm.style.display = 'none';
 
-                const tempForm = document.createElement('form');
-                tempForm.action = SCRIPT_URL;
-                tempForm.method = 'POST';
-                tempForm.target = 'hiddenFrame';
-                tempForm.style.display = 'none';
+            const fields = {
+                nombre_competidor: nombre_competidor,
+                celular: celular,
+                nombre_negocio: nombre_negocio,
+                comentario: comentario,
+                tiempo: '',
+                estado: 'registrado',
+                operador: operadorNombre,
+                dispositivo_id: dispositivoId
+            };
 
-                const fields = {
-                    nombre_competidor: nombre_competidor,
-                    nombre_negocio: nombre_negocio,
-                    celular: celular,
-                    tiempo: '',
-                    estado: 'registrado',
-                    operador: operadorNombre,
-                    dispositivo_id: dispositivoId,
-                    comentario: comentario
-                };
+            for (const [key, value] of Object.entries(fields)) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                tempForm.appendChild(input);
+            }
 
-                for (const [key, value] of Object.entries(fields)) {
-                    const input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = key;
-                    input.value = value;
-                    tempForm.appendChild(input);
-                }
+            document.body.appendChild(tempForm);
+            tempForm.submit();
+            setTimeout(() => { if (document.body.contains(tempForm)) document.body.removeChild(tempForm); }, 1000);
 
-                document.body.appendChild(tempForm);
-                tempForm.submit();
+            document.getElementById('registrationForm').style.display = 'none';
+            document.getElementById('successMessage').classList.add('active');
 
-                // Limpiar formulario temporal
-                setTimeout(() => {
-                    if (document.body.contains(tempForm)) {
-                        document.body.removeChild(tempForm);
-                    }
-                }, 1000);
-
-                // Mostrar mensaje de éxito INMEDIATAMENTE
-                form.style.display = 'none';
-                successMessage.classList.add('active');
-
-                // Reset después de 3 segundos
-                setTimeout(() => {
-                    form.reset();
-                    form.style.display = 'block';
-                    successMessage.classList.remove('active');
-                    btnSubmit.disabled = false;
-                    btnSubmit.textContent = '🏁 Registrarme';
-                }, 3000);
-
-            } catch (error) {
-                console.error('Error:', error);
-                errorText.textContent = 'Error al registrar. Intentá de nuevo.';
-                errorMessage.classList.add('active');
-                setTimeout(() => errorMessage.classList.remove('active'), 3000);
+            setTimeout(() => {
+                document.getElementById('registrationForm').reset();
+                document.getElementById('registrationForm').style.display = 'block';
+                document.getElementById('successMessage').classList.remove('active');
                 btnSubmit.disabled = false;
                 btnSubmit.textContent = '🏁 Registrarme';
-            }
+            }, 3000);
         });
     </script>
 </body>
